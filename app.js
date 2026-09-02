@@ -1,7 +1,13 @@
 require("dotenv").config();
+
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 const express = require("express");
 const mongoose = require("mongoose");
 const Post = require("./models/post");
+const User = require("./models/user");
 
 const app = express();
 
@@ -9,11 +15,11 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB connected");
+    console.log("Database:", mongoose.connection.name);
   })
   .catch((err) => {
     console.log("MongoDB connection error:", err);
   });
-
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -21,22 +27,19 @@ app.use((req, res, next) => {
   next();
 });
 
-const blogs = [];
-
 app.get("/", (req, res) => {
   res.send("Server running on port 5000");
 });
 
 app.get("/blogs", async (req, res) => {
   try {
-    const posts = await Post.find();
+    const posts = await Post.find().populate("authorId");
 
     res.json(posts);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
 app.post("/blogs", async (req, res) => {
   try {
     const post = await Post.create(req.body);
@@ -87,6 +90,20 @@ app.delete("/blogs/:id", async (req, res) => {
     });
   }
 });
+app.get("/blogs/recent", async (req, res) => {
+  try {
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .populate("authorId");
+
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+});
 
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
@@ -97,6 +114,21 @@ app.post("/login", (req, res) => {
   });
 });
 
+app.post("/users", async (req, res) => {
+  console.log("MongoDB readyState:", mongoose.connection.readyState);
+
+  try {
+    const user = await User.create(req.body);
+
+    res.status(201).json(user);
+  } catch (err) {
+    console.log("USER CREATE ERROR:", err);
+
+    res.status(400).json({
+      message: err.message,
+    });
+  }
+});
 app.listen(5000, () => {
   console.log("Server running on port 5000");
 });
