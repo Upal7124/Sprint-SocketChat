@@ -1,5 +1,6 @@
 require("dotenv").config();
-
+const http = require("http");
+const { Server } = require("socket.io");
 const dns = require("dns");
 
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
@@ -10,6 +11,30 @@ const Post = require("./models/post");
 const User = require("./models/user");
 
 const app = express();
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+
+  socket.on("message", (data) => {
+    console.log("Message received:", data);
+
+    io.emit("message", data);
+  });
+
+  socket.on("typing", (username) => {
+    socket.broadcast.emit("typing", username);
+  });
+  socket.on("stopTyping", (username) => {
+    socket.broadcast.emit("stopTyping", username);
+  });
+});
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -129,6 +154,6 @@ app.post("/users", async (req, res) => {
     });
   }
 });
-app.listen(5000, () => {
+server.listen(5000, () => {
   console.log("Server running on port 5000");
 });
