@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 
 const username = window.prompt("Enter your name:");
 
-const socket = io("http://localhost:5000");
+const socket = io("https://your-chat-backend.onrender.com");
 
 function App() {
   const [message, setMessage] = useState("");
