@@ -16,7 +16,8 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "https://sprint-09-10-1.onrender.com",
+    methods: ["GET", "POST"],
   },
 });
 io.on("connection", (socket) => {
