@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("typing", (data) => {
-    setTypingUser(data.username);
+    socket.to(data.room).emit("typing", data.username);
   });
 
   socket.on("stopTyping", (data) => {
