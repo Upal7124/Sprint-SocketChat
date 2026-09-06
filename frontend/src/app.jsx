@@ -9,18 +9,22 @@ function App() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [typingUser, setTypingUser] = useState("");
+  const [room, setRoom] = useState("general");
   const typingTimer = useRef(null);
 
   useEffect(() => {
     socket.on("message", (newMessage) => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
     });
-    socket.on("typing", (username) => {
-      setTypingUser(username);
+
+    socket.on("typing", (data) => {
+      setTypingUser(data.username);
     });
-    socket.on("stopTyping", (username) => {
+
+    socket.on("stopTyping", () => {
       setTypingUser("");
     });
+
     return () => {
       socket.off("message");
       socket.off("typing");
@@ -37,6 +41,7 @@ function App() {
     socket.emit("message", {
       username: username,
       message: message,
+      room: room,
     });
 
     setMessage("");
@@ -45,19 +50,42 @@ function App() {
   return (
     <div>
       <h1>Socket.IO Chat</h1>
+      <div>
+        <label>Select Room: </label>
 
+        <select
+          value={room}
+          onChange={(e) => {
+            const selectedRoom = e.target.value;
+
+            setRoom(selectedRoom);
+            setMessages([]);
+
+            socket.emit("joinRoom", selectedRoom);
+          }}
+        >
+          <option value="general">General</option>
+          <option value="tech">Tech</option>
+        </select>
+      </div>
       <input
         type="text"
         value={message}
         onChange={(e) => {
           setMessage(e.target.value);
 
-          socket.emit("typing", username);
+          socket.emit("typing", {
+            username: username,
+            room: room,
+          });
 
           clearTimeout(typingTimer.current);
 
           typingTimer.current = setTimeout(() => {
-            socket.emit("stopTyping", username);
+            socket.emit("stopTyping", {
+              username: username,
+              room: room,
+            });
           }, 1000);
         }}
         placeholder="Type a message"

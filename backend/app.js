@@ -22,17 +22,32 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
+  let currentRoom = "general";
+
+  socket.join(currentRoom);
+
+  socket.on("joinRoom", (room) => {
+    socket.leave(currentRoom);
+
+    currentRoom = room;
+
+    socket.join(currentRoom);
+
+    console.log(`${socket.id} joined room: ${currentRoom}`);
+  });
+
   socket.on("message", (data) => {
     console.log("Message received:", data);
 
-    io.emit("message", data);
+    io.to(data.room).emit("message", data);
   });
 
-  socket.on("typing", (username) => {
-    socket.broadcast.emit("typing", username);
+  socket.on("typing", (data) => {
+    setTypingUser(data.username);
   });
-  socket.on("stopTyping", (username) => {
-    socket.broadcast.emit("stopTyping", username);
+
+  socket.on("stopTyping", (data) => {
+    socket.to(data.room).emit("stopTyping", data.username);
   });
 });
 
